@@ -25,7 +25,6 @@ $wingetPkgs = @(
     @{ Name = "Git"; Id = "Git.Git" }
     @{ Name = "Alacritty"; Id = "Alacritty.Alacritty" }
     @{ Name = "Neovim"; Id = "Neovim.Neovim" }
-    @{ Name = "Oh My Posh"; Id = "JanDeDobbeleer.OhMyPosh" }
     @{ Name = "VSCodium"; Id = "VSCodium.VSCodium" }
     @{ Name = "Zed"; Id = "ZedIndustries.Zed" }
     @{ Name = "Steam"; Id = "Valve.Steam" }
@@ -64,7 +63,6 @@ scoop install extras/qbittorrent extras/mpv main/ffmpeg extras/spotify main/yarn
 $symlinks = @(
     @{ src = Join-Path $dotfiles ".gitconfig"; dst = Join-Path $homeDir ".gitconfig" }
     @{ src = Join-Path $dotfiles ".gitattributes"; dst = Join-Path $homeDir ".gitattributes" }
-    @{ src = Join-Path $dotfiles ".config\oh-my-posh\avit.omp.json"; dst = Join-Path $homeDir ".config\oh-my-posh\avit.omp.json" }
     @{ src = Join-Path $dotfiles ".config\VSCodium\User\settings.json"; dst = Join-Path $homeDir "AppData\Roaming\VSCodium\User\settings.json" }
     @{ src = Join-Path $dotfiles ".config\nvim"; dst = Join-Path $env:LOCALAPPDATA "nvim" }
     @{ src = Join-Path $dotfiles ".config\zed\settings.json"; dst = Join-Path $homeDir "AppData\Roaming\Zed\settings.json" }

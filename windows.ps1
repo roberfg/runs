@@ -22,14 +22,11 @@ if (-not (Test-Path $dotfiles))
 
 $wingetPkgs = @(
     @{ Name = "Chromium"; Id = "Hibbiki.Chromium" }
-    @{ Name = "Git"; Id = "Git.Git" }
     @{ Name = "Alacritty"; Id = "Alacritty.Alacritty" }
     @{ Name = "Neovim"; Id = "Neovim.Neovim" }
     @{ Name = "VSCodium"; Id = "VSCodium.VSCodium" }
-    @{ Name = "Zed"; Id = "ZedIndustries.Zed" }
     @{ Name = "Steam"; Id = "Valve.Steam" }
     @{ Name = "PowerShell"; Id = "Microsoft.PowerShell" }
-    @{ Name = "VCRedist.2015"; Id = "Microsoft.VCRedist.2015+.x64" }
 )
 
 Write-Host ">>> Instalando paquetes con winget..." -ForegroundColor Cyan
@@ -58,14 +55,30 @@ scoop bucket add java
 scoop bucket add extras
 
 Write-Host ">>> Instalando paquetes con Scoop..." -ForegroundColor Cyan
-scoop install extras/qbittorrent extras/mpv main/ffmpeg extras/spotify main/yarn main/opencode main/make main/gcc main/mingw main/nodejs-lts java/openjdk25 main/maven extras/sts main/podman extras/revouninstaller main/7zip extras/bruno
+scoop install `
+  extras/qbittorrent `
+  extras/mpv `
+  main/ffmpeg `
+  extras/spotify `
+  main/yarn `
+  main/opencode `
+  main/make `
+  main/gcc `
+  main/mingw `
+  main/nodejs-lts `
+  java/openjdk25 `
+  main/maven `
+  extras/sts `
+  main/podman `
+  extras/revouninstaller `
+  main/7zip `
+  extras/bruno
 
 $symlinks = @(
     @{ src = Join-Path $dotfiles ".gitconfig"; dst = Join-Path $homeDir ".gitconfig" }
     @{ src = Join-Path $dotfiles ".gitattributes"; dst = Join-Path $homeDir ".gitattributes" }
     @{ src = Join-Path $dotfiles ".config\VSCodium\User\settings.json"; dst = Join-Path $homeDir "AppData\Roaming\VSCodium\User\settings.json" }
     @{ src = Join-Path $dotfiles ".config\nvim"; dst = Join-Path $env:LOCALAPPDATA "nvim" }
-    @{ src = Join-Path $dotfiles ".config\zed\settings.json"; dst = Join-Path $homeDir "AppData\Roaming\Zed\settings.json" }
     @{ src = Join-Path $dotfiles ".alacritty.toml"; dst = Join-Path $env:APPDATA "alacritty\alacritty.toml" }
     @{ src = Join-Path $dotfiles ".config\opencode\opencode.jsonc"; dst = Join-Path $homeDir ".config\opencode\opencode.jsonc" }
     @{ src = Join-Path $dotfiles ".config\opencode\tui.json"; dst = Join-Path $homeDir ".config\opencode\tui.json" }

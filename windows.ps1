@@ -4,12 +4,13 @@ $devMode = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVers
 if (-not $isAdmin -and -not $devMode)
 {
     Write-Host ">>> Elevando a Administrador..." -ForegroundColor Yellow
-    Start-Process pwsh.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    $shell = if (Get-Command pwsh.exe -ErrorAction SilentlyContinue) { "pwsh.exe" } else { "powershell.exe" }
+    Start-Process $shell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     exit
 }
 
 $dotfiles = Join-Path $PSScriptRoot "..\dotfiles"
-$homeDir = "C:\Users\$env:USERNAME"
+$homeDir = $env:USERPROFILE
 
 if (-not (Test-Path $dotfiles))
 {
@@ -44,11 +45,10 @@ foreach ($pkg in $wingetPkgs)
 }
 
 Write-Host ">>> Instalando Scoop..." -ForegroundColor Cyan
-if (-not (Get-Command scoop -ErrorAction SilentlyContinue))
-{
-    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-    irm get.scoop.sh | iex
-}
+$scoopInstaller = Join-Path $env:TEMP "install-scoop.ps1"
+Invoke-RestMethod get.scoop.sh -OutFile $scoopInstaller
+& $scoopInstaller -RunAsAdmin
+Remove-Item $scoopInstaller -Force
 
 Write-Host ">>> Agregando buckets de Scoop..." -ForegroundColor Cyan
 scoop bucket add java
@@ -60,19 +60,20 @@ scoop install `
   extras/mpv `
   main/ffmpeg `
   extras/spotify `
+  main/nodejs-lts `
   main/yarn `
   main/opencode `
   main/make `
   main/gcc `
   main/mingw `
-  main/nodejs-lts `
   java/openjdk25 `
   main/maven `
   extras/sts `
   main/podman `
   extras/revouninstaller `
   main/7zip `
-  extras/bruno
+  extras/bruno `
+  yt-dlp
 
 $symlinks = @(
     @{ src = Join-Path $dotfiles ".gitconfig"; dst = Join-Path $homeDir ".gitconfig" }

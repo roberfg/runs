@@ -73,7 +73,8 @@ scoop install `
   extras/revouninstaller `
   main/7zip `
   extras/bruno `
-  yt-dlp
+  yt-dlp `
+  extras/notepadplusplus
 
 $symlinks = @(
     @{ src = Join-Path $dotfiles ".gitconfig"; dst = Join-Path $homeDir ".gitconfig" }

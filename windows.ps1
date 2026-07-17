@@ -28,6 +28,22 @@ $wingetPkgs = @(
     @{ Name = "VSCodium"; Id = "VSCodium.VSCodium" }
     @{ Name = "Steam"; Id = "Valve.Steam" }
     @{ Name = "PowerShell"; Id = "Microsoft.PowerShell" }
+    @{ Name = "qBittorrent"; Id = "qBittorrent.qBittorrent" }
+    @{ Name = "ffmpeg"; Id = "Gyan.FFmpeg" }
+    @{ Name = "Spotify"; Id = "Spotify.Spotify" }
+    @{ Name = "Node.js LTS"; Id = "OpenJS.NodeJS.LTS" }
+    @{ Name = "Yarn"; Id = "Yarn.Yarn" }
+    @{ Name = "OpenJDK 25"; Id = "EclipseAdoptium.Temurin.25.JDK" }
+    @{ Name = "Maven"; Id = "Apache.Maven" }
+    @{ Name = "Spring Tools 4"; Id = "vmware.spring-tools-4-for-eclipse" }
+    @{ Name = "Podman"; Id = "RedHat.Podman" }
+    @{ Name = "Revo Uninstaller"; Id = "VSRevo.RevoUninstaller" }
+    @{ Name = "7-Zip"; Id = "7zip.7zip" }
+    @{ Name = "Bruno"; Id = "Bruno.Bruno" }
+    @{ Name = "yt-dlp"; Id = "yt-dlp.yt-dlp" }
+    @{ Name = "Notepad++"; Id = "Notepad++.Notepad++" }
+    @{ Name = "GNU Make"; Id = "GnuWin32.Make" }
+    @{ Name = "MinGW-w64 GCC"; Id = "niXman.MinGW-w64-GCC" }
 )
 
 Write-Host ">>> Instalando paquetes con winget..." -ForegroundColor Cyan
@@ -44,37 +60,31 @@ foreach ($pkg in $wingetPkgs)
     }
 }
 
-Write-Host ">>> Instalando Scoop..." -ForegroundColor Cyan
-$scoopInstaller = Join-Path $env:TEMP "install-scoop.ps1"
-Invoke-RestMethod get.scoop.sh -OutFile $scoopInstaller
-& $scoopInstaller -RunAsAdmin
-Remove-Item $scoopInstaller -Force
+function Update-PathFromRegistry {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                [System.Environment]::GetEnvironmentVariable("Path", "User")
+}
 
-Write-Host ">>> Agregando buckets de Scoop..." -ForegroundColor Cyan
-scoop bucket add java
-scoop bucket add extras
-
-Write-Host ">>> Instalando paquetes con Scoop..." -ForegroundColor Cyan
-scoop install `
-  extras/qbittorrent `
-  extras/mpv `
-  main/ffmpeg `
-  extras/spotify `
-  main/nodejs-lts `
-  main/yarn `
-  main/opencode `
-  main/make `
-  main/gcc `
-  main/mingw `
-  java/openjdk25 `
-  main/maven `
-  extras/sts `
-  main/podman `
-  extras/revouninstaller `
-  main/7zip `
-  extras/bruno `
-  yt-dlp `
-  extras/notepadplusplus
+Write-Host ">>> Instalando opencode via npm..." -ForegroundColor Cyan
+$nodeVer = node --version 2>$null
+if (-not $nodeVer)
+{
+    Write-Host "  Node.js no detectado en la sesion, refrescando PATH desde registro..." -ForegroundColor Yellow
+    Update-PathFromRegistry
+    $nodeVer = node --version 2>$null
+}
+if ($nodeVer)
+{
+    Write-Host "  Node $nodeVer detectado" -ForegroundColor DarkYellow
+    npm install -g opencode-ai@latest
+    if ($LASTEXITCODE -ne 0)
+    {
+        Write-Warning "npm install -g opencode-ai fallo (exit $LASTEXITCODE)"
+    }
+} else
+{
+    Write-Warning "Node.js no encontrado tras refrescar PATH; saltando opencode"
+}
 
 $symlinks = @(
     @{ src = Join-Path $dotfiles ".gitconfig"; dst = Join-Path $homeDir ".gitconfig" }
@@ -84,6 +94,7 @@ $symlinks = @(
     @{ src = Join-Path $dotfiles ".alacritty.toml"; dst = Join-Path $env:APPDATA "alacritty\alacritty.toml" }
     @{ src = Join-Path $dotfiles ".config\opencode\opencode.jsonc"; dst = Join-Path $homeDir ".config\opencode\opencode.jsonc" }
     @{ src = Join-Path $dotfiles ".config\opencode\tui.json"; dst = Join-Path $homeDir ".config\opencode\tui.json" }
+    @{ src = Join-Path $dotfiles ".config\opencode\AGENTS.md"; dst = Join-Path $homeDir ".config\opencode\AGENTS.md" }
     @{ src = Join-Path $dotfiles ".config\opencode\skills"; dst = Join-Path $homeDir ".config\opencode\skills" }
 )
 

@@ -12,6 +12,22 @@ if (-not $isAdmin -and -not $devMode)
 $dotfiles = Join-Path $PSScriptRoot "..\dotfiles"
 $homeDir = $env:USERPROFILE
 
+if (Test-Path $dotfiles)
+{
+    if (Test-Path (Join-Path $dotfiles ".git"))
+    {
+        Write-Host ">>> Actualizando dotfiles..." -ForegroundColor Cyan
+        git -C $dotfiles pull --ff-only 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0)
+        {
+            Write-Warning "git pull fallo (puede haber cambios locales); continuando con la version actual"
+        }
+    } else
+    {
+        Write-Host ">>> $dotfiles existe pero no es un repo git. Eliminando para re-clonar." -ForegroundColor Yellow
+        Remove-Item -LiteralPath $dotfiles -Recurse -Force
+    }
+}
 if (-not (Test-Path $dotfiles))
 {
     Write-Host ">>> Clonando dotfiles..." -ForegroundColor Cyan
@@ -22,41 +38,54 @@ if (-not (Test-Path $dotfiles))
 }
 
 $wingetPkgs = @(
-    @{ Name = "Chromium"; Id = "Hibbiki.Chromium" }
-    @{ Name = "Alacritty"; Id = "Alacritty.Alacritty" }
-    @{ Name = "Neovim"; Id = "Neovim.Neovim" }
-    @{ Name = "VSCodium"; Id = "VSCodium.VSCodium" }
-    @{ Name = "Steam"; Id = "Valve.Steam" }
+    # Sistema / fuentes
+    @{ Name = "JetBrainsMono Nerd Font"; Id = "DEVCOM.JetBrainsMonoNerdFont" }
+    @{ Name = "VC++ Redist 2015+ x64"; Id = "Microsoft.VCRedist.2015+.x64" }
+    @{ Name = "7-Zip"; Id = "7zip.7zip" }
+    @{ Name = "Make"; Id = "GnuWin32.Make" }
+    # Runtime
     @{ Name = "PowerShell"; Id = "Microsoft.PowerShell" }
-    @{ Name = "qBittorrent"; Id = "qBittorrent.qBittorrent" }
-    @{ Name = "ffmpeg"; Id = "Gyan.FFmpeg" }
-    @{ Name = "Spotify"; Id = "Spotify.Spotify" }
     @{ Name = "Node.js LTS"; Id = "OpenJS.NodeJS.LTS" }
     @{ Name = "Yarn"; Id = "Yarn.Yarn" }
     @{ Name = "OpenJDK 25"; Id = "EclipseAdoptium.Temurin.25.JDK" }
-    @{ Name = "Maven"; Id = "Apache.Maven" }
-    @{ Name = "Spring Tools 4"; Id = "vmware.spring-tools-4-for-eclipse" }
+    # Editores / dev
+    @{ Name = "Neovim"; Id = "Neovim.Neovim" }
+    @{ Name = "VSCodium"; Id = "VSCodium.VSCodium" }
+    @{ Name = "Zed"; Id = "ZedIndustries.Zed" }
+    @{ Name = "Alacritty"; Id = "Alacritty.Alacritty" }
+    # Apps
+    @{ Name = "Brave Browser"; Id = "Brave.Brave" }
+    @{ Name = "qBittorrent"; Id = "qBittorrent.qBittorrent" }
+    @{ Name = "ffmpeg"; Id = "Gyan.FFmpeg" }
+    @{ Name = "Spotify"; Id = "Spotify.Spotify" }
+    @{ Name = "Steam"; Id = "Valve.Steam" }
     @{ Name = "Podman"; Id = "RedHat.Podman" }
-    @{ Name = "Revo Uninstaller"; Id = "VSRevo.RevoUninstaller" }
-    @{ Name = "7-Zip"; Id = "7zip.7zip" }
     @{ Name = "Bruno"; Id = "Bruno.Bruno" }
-    @{ Name = "yt-dlp"; Id = "yt-dlp.yt-dlp" }
     @{ Name = "Notepad++"; Id = "Notepad++.Notepad++" }
-    @{ Name = "GNU Make"; Id = "GnuWin32.Make" }
-    @{ Name = "MinGW-w64 GCC"; Id = "niXman.MinGW-w64-GCC" }
+    @{ Name = "Revo Uninstaller"; Id = "RevoUninstaller.RevoUninstaller" }
 )
 
+$installResults = @()
 Write-Host ">>> Instalando paquetes con winget..." -ForegroundColor Cyan
 foreach ($pkg in $wingetPkgs)
 {
-    $installed = winget list --exact --id $pkg.Id --accept-source-agreements 2>$null
+    $null = winget list --exact --id $pkg.Id --accept-source-agreements 2>$null
     if ($LASTEXITCODE -eq 0)
     {
         Write-Host "  ya instalado: $($pkg.Name)" -ForegroundColor DarkYellow
+        $installResults += @{ Name = $pkg.Name; Status = "ya-instalado" }
     } else
     {
         Write-Host "  instalando: $($pkg.Name)..." -ForegroundColor Cyan
         winget install --exact --id $pkg.Id --silent --accept-package-agreements --accept-source-agreements
+        if ($LASTEXITCODE -eq 0)
+        {
+            $installResults += @{ Name = $pkg.Name; Status = "instalado" }
+        } else
+        {
+            Write-Warning "    fallo al instalar $($pkg.Name)"
+            $installResults += @{ Name = $pkg.Name; Status = "fallo" }
+        }
     }
 }
 
@@ -81,6 +110,8 @@ if ($nodeVer)
     {
         Write-Warning "npm install -g opencode-ai fallo (exit $LASTEXITCODE)"
     }
+    Write-Host "  Refrescando PATH tras npm install..." -ForegroundColor DarkYellow
+    Update-PathFromRegistry
 } else
 {
     Write-Warning "Node.js no encontrado tras refrescar PATH; saltando opencode"
@@ -96,6 +127,7 @@ $symlinks = @(
     @{ src = Join-Path $dotfiles ".config\opencode\tui.json"; dst = Join-Path $homeDir ".config\opencode\tui.json" }
     @{ src = Join-Path $dotfiles ".config\opencode\AGENTS.md"; dst = Join-Path $homeDir ".config\opencode\AGENTS.md" }
     @{ src = Join-Path $dotfiles ".config\opencode\skills"; dst = Join-Path $homeDir ".config\opencode\skills" }
+    @{ src = Join-Path $dotfiles ".config\zed"; dst = Join-Path $env:APPDATA "Zed" }
 )
 
 foreach ($item in $symlinks)
@@ -128,5 +160,34 @@ foreach ($item in $symlinks)
     Write-Host "Symlink: $($item.dst) <- $($item.src)"
 }
 
-Write-Host "`nPresione Enter para cerrar..." -ForegroundColor Green
+Write-Host ""
+Write-Host ">>> Resumen winget" -ForegroundColor Cyan
+$okCount = ($installResults | Where-Object { $_.Status -eq "instalado" }).Count
+$skippedCount = ($installResults | Where-Object { $_.Status -eq "ya-instalado" }).Count
+$failed = $installResults | Where-Object { $_.Status -eq "fallo" }
+$failedCount = $failed.Count
+Write-Host "  Instalados en esta corrida: $okCount" -ForegroundColor Green
+Write-Host "  Ya estaban:                $skippedCount" -ForegroundColor DarkYellow
+if ($failedCount -gt 0)
+{
+    Write-Host "  Fallos:                    $failedCount" -ForegroundColor Red
+    foreach ($f in $failed)
+    {
+        Write-Host "    - $($f.Name)" -ForegroundColor Red
+    }
+} else
+{
+    Write-Host "  Fallos:                    0" -ForegroundColor Green
+}
+
+Write-Host ""
+Write-Host ">>> ACCION MANUAL REQUERIDA: Maven" -ForegroundColor Yellow
+Write-Host "  Maven no esta disponible en winget. Para instalarlo:" -ForegroundColor Yellow
+Write-Host "    1. Descarga apache-maven-3.9.x-bin.zip desde https://maven.apache.org/download.cgi"
+Write-Host "    2. Extrae en C:\Tools\apache-maven-3.9.x\"
+Write-Host "    3. Variable de sistema MAVEN_HOME = C:\Tools\apache-maven-3.9.x"
+Write-Host "    4. Anade %MAVEN_HOME%\bin al PATH del sistema"
+Write-Host "    5. Abre una nueva terminal y verifica con: mvn --version"
+Write-Host ""
+Write-Host "Presione Enter para cerrar..." -ForegroundColor Green
 Read-Host

@@ -105,13 +105,20 @@ if (-not $nodeVer)
 if ($nodeVer)
 {
     Write-Host "  Node $nodeVer detectado" -ForegroundColor DarkYellow
-    npm install -g opencode-ai@latest
-    if ($LASTEXITCODE -ne 0)
+    $opencodeVer = opencode --version 2>$null
+    if ($opencodeVer)
     {
-        Write-Warning "npm install -g opencode-ai fallo (exit $LASTEXITCODE)"
+        Write-Host "  opencode $opencodeVer ya instalado; saltando npm install" -ForegroundColor DarkYellow
+    } else
+    {
+        npm install -g opencode-ai@latest
+        if ($LASTEXITCODE -ne 0)
+        {
+            Write-Warning "npm install -g opencode-ai fallo (exit $LASTEXITCODE)"
+        }
+        Write-Host "  Refrescando PATH tras npm install..." -ForegroundColor DarkYellow
+        Update-PathFromRegistry
     }
-    Write-Host "  Refrescando PATH tras npm install..." -ForegroundColor DarkYellow
-    Update-PathFromRegistry
 } else
 {
     Write-Warning "Node.js no encontrado tras refrescar PATH; saltando opencode"

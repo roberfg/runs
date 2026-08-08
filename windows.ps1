@@ -62,6 +62,8 @@ $wingetPkgs = @(
     @{ Name = "Bruno"; Id = "Bruno.Bruno" }
     @{ Name = "Notepad++"; Id = "Notepad++.Notepad++" }
     @{ Name = "Revo Uninstaller"; Id = "RevoUninstaller.RevoUninstaller" }
+    @{ Name = "Epic Games"; Id = "EpicGames.EpicGamesLauncher" }
+    @{ Name = "GOG Galaxy"; Id = "GOG.Galaxy" }
 )
 
 $installResults = @()

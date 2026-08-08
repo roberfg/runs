@@ -9,7 +9,7 @@ if (-not $isAdmin -and -not $devMode)
     exit
 }
 
-$dotfiles = Join-Path $PSScriptRoot "..\dotfiles"
+$dotfiles = Join-Path $PSScriptRoot "..\.dotfiles"
 $homeDir = $env:USERPROFILE
 
 if (Test-Path $dotfiles)
@@ -39,6 +39,7 @@ if (-not (Test-Path $dotfiles))
 
 $wingetPkgs = @(
     # Sistema / fuentes
+    @{ Name = "Git"; Id = "Git.Git" }
     @{ Name = "JetBrainsMono Nerd Font"; Id = "DEVCOM.JetBrainsMonoNerdFont" }
     @{ Name = "VC++ Redist 2015+ x64"; Id = "Microsoft.VCRedist.2015+.x64" }
     @{ Name = "7-Zip"; Id = "7zip.7zip" }
@@ -49,10 +50,8 @@ $wingetPkgs = @(
     @{ Name = "Yarn"; Id = "Yarn.Yarn" }
     @{ Name = "OpenJDK 25"; Id = "EclipseAdoptium.Temurin.25.JDK" }
     # Editores / dev
-    @{ Name = "Neovim"; Id = "Neovim.Neovim" }
     @{ Name = "VSCodium"; Id = "VSCodium.VSCodium" }
-    @{ Name = "Zed"; Id = "ZedIndustries.Zed" }
-    @{ Name = "Alacritty"; Id = "Alacritty.Alacritty" }
+    @{ Name = "Wezterm"; Id = "wez.wezterm" }
     # Apps
     @{ Name = "Brave Browser"; Id = "Brave.Brave" }
     @{ Name = "qBittorrent"; Id = "qBittorrent.qBittorrent" }
@@ -125,16 +124,21 @@ if ($nodeVer)
 }
 
 $symlinks = @(
-    @{ src = Join-Path $dotfiles ".gitconfig"; dst = Join-Path $homeDir ".gitconfig" }
-    @{ src = Join-Path $dotfiles ".gitattributes"; dst = Join-Path $homeDir ".gitattributes" }
-    @{ src = Join-Path $dotfiles ".config\VSCodium\User\settings.json"; dst = Join-Path $homeDir "AppData\Roaming\VSCodium\User\settings.json" }
-    @{ src = Join-Path $dotfiles ".config\nvim"; dst = Join-Path $env:LOCALAPPDATA "nvim" }
-    @{ src = Join-Path $dotfiles ".alacritty.toml"; dst = Join-Path $env:APPDATA "alacritty\alacritty.toml" }
-    @{ src = Join-Path $dotfiles ".config\opencode\opencode.jsonc"; dst = Join-Path $homeDir ".config\opencode\opencode.jsonc" }
-    @{ src = Join-Path $dotfiles ".config\opencode\tui.json"; dst = Join-Path $homeDir ".config\opencode\tui.json" }
-    @{ src = Join-Path $dotfiles ".config\opencode\AGENTS.md"; dst = Join-Path $homeDir ".config\opencode\AGENTS.md" }
-    @{ src = Join-Path $dotfiles ".config\opencode\skills"; dst = Join-Path $homeDir ".config\opencode\skills" }
-    @{ src = Join-Path $dotfiles ".config\zed"; dst = Join-Path $env:APPDATA "Zed" }
+    # git
+    @{ src = Join-Path $dotfiles "git\.gitconfig";       dst = Join-Path $homeDir ".gitconfig" }
+    @{ src = Join-Path $dotfiles "git\.gitattributes";   dst = Join-Path $homeDir ".gitattributes" }
+
+    # opencode
+    @{ src = Join-Path $dotfiles "config\.config\opencode\AGENTS.md";       dst = Join-Path $homeDir ".config\opencode\AGENTS.md" }
+    @{ src = Join-Path $dotfiles "config\.config\opencode\opencode.jsonc";  dst = Join-Path $homeDir ".config\opencode\opencode.jsonc" }
+    @{ src = Join-Path $dotfiles "config\.config\opencode\skills";         dst = Join-Path $homeDir ".config\opencode\skills" }
+    @{ src = Join-Path $dotfiles "config\.config\opencode\tui.json";       dst = Join-Path $homeDir ".config\opencode\tui.json" }
+
+    # vscodium
+    @{ src = Join-Path $dotfiles "config\.config\VSCodium"; dst = Join-Path $env:APPDATA "VSCodium" }
+
+    # wezterm
+    @{ src = Join-Path $dotfiles "config\.config\wezterm\wezterm.lua"; dst = Join-Path $homeDir ".config\wezterm\wezterm.lua" }
 )
 
 foreach ($item in $symlinks)

@@ -54,9 +54,36 @@ if [ ! -d "$DOTFILES_DIR" ]; then
     git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
 fi
 
-echo ">>> Aplicando stow en $DOTFILES_DIR"
-cd "$DOTFILES_DIR"
-stow -v .
+# stow_safe <paquete>: stowea el paquete, resolviendo conflictos de forma no destructiva.
+# Si el target existe como archivo/dir regular, lo reemplaza por symlink sin backup.
+# Si ya es symlink correcto, no-op (idempotente).
+# Si ya es symlink a otro sitio, stow lo reemplaza.
+# Si el target no existe, stow lo crea.
+stow_safe() {
+    local pkg="$1"
+    local pkg_dir="$DOTFILES_DIR/$pkg"
+    local target="$HOME"
+
+    [ -d "$pkg_dir" ] || { echo "  [skip] no existe paquete: $pkg"; return 0; }
+
+    # Pre-flight: reemplazar targets regulares por symlinks antes de stow
+    while IFS= read -r -d '' src; do
+        local rel="${src#"$pkg_dir"/}"
+        local dst="$target/$rel"
+        if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+            rm -rf "$dst"
+            echo "  [replace] $dst (regular -> symlink)"
+        fi
+    done < <(find "$pkg_dir" -mindepth 1 -print0)
+
+    ( cd "$pkg_dir" && stow --target="$target" --restow . )
+}
+
+echo ">>> Sincronizando paquetes stow"
+for pkg in bash git config; do
+    echo "--- stow: $pkg ---"
+    stow_safe "$pkg"
+done
 
 okCount=${#RESULTS_OK[@]}
 skipCount=${#RESULTS_SKIP[@]}

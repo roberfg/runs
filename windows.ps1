@@ -64,6 +64,10 @@ $wingetPkgs = @(
     @{ Name = "Revo Uninstaller"; Id = "RevoUninstaller.RevoUninstaller" }
     @{ Name = "Epic Games"; Id = "EpicGames.EpicGamesLauncher" }
     @{ Name = "GOG Galaxy"; Id = "GOG.Galaxy" }
+    @{ Name = "VLC"; Id = "VideoLAN.VLC" }
+    @{ Name = "Python"; Id = "Python.Python.3.13" }
+    @{ Name = "OnlyOffice"; Id = "ONLYOFFICE.DesktopEditors" }
+    @{ Name = "HWMonitor"; Id = "CPUID.HWMonitor" }
 )
 
 $installResults = @()
@@ -125,6 +129,35 @@ if ($nodeVer)
     Write-Warning "Node.js no encontrado tras refrescar PATH; saltando opencode"
 }
 
+# ffsubsync es requerido por la skill de opencode "synchronize-subtitles"
+Write-Host ">>> Instalando ffsubsync via pip..." -ForegroundColor Cyan
+$pythonVer = python --version 2>$null
+if (-not $pythonVer)
+{
+    Write-Host "  Python no detectado en la sesion, refrescando PATH desde registro..." -ForegroundColor Yellow
+    Update-PathFromRegistry
+    $pythonVer = python --version 2>$null
+}
+if ($pythonVer)
+{
+    Write-Host "  $pythonVer detectado" -ForegroundColor DarkYellow
+    $null = pip show ffsubsync 2>$null
+    if ($LASTEXITCODE -eq 0)
+    {
+        Write-Host "  ffsubsync ya instalado; saltando pip install" -ForegroundColor DarkYellow
+    } else
+    {
+        pip install ffsubsync
+        if ($LASTEXITCODE -ne 0)
+        {
+            Write-Warning "pip install ffsubsync fallo (exit $LASTEXITCODE)"
+        }
+    }
+} else
+{
+    Write-Warning "Python no encontrado tras refrescar PATH; saltando ffsubsync"
+}
+
 $symlinks = @(
     # git
     @{ src = Join-Path $dotfiles "git\.gitconfig";       dst = Join-Path $homeDir ".gitconfig" }
@@ -137,11 +170,51 @@ $symlinks = @(
     @{ src = Join-Path $dotfiles "config\.config\opencode\tui.json";       dst = Join-Path $homeDir ".config\opencode\tui.json" }
 
     # vscodium
-    @{ src = Join-Path $dotfiles "config\.config\VSCodium"; dst = Join-Path $env:APPDATA "VSCodium" }
+    @{ src = Join-Path $dotfiles "config\.config\VSCodium\User\settings.json"; dst = Join-Path $env:APPDATA "VSCodium\User\settings.json" }
 
     # wezterm
     @{ src = Join-Path $dotfiles "config\.config\wezterm\wezterm.lua"; dst = Join-Path $homeDir ".config\wezterm\wezterm.lua" }
 )
+
+# Migración del estado de VSCodium fuera del repo.
+# Antes, windows.ps1 enlazaba el directorio completo config\.config\VSCodium hacia %APPDATA%\VSCodium,
+# y el editor escribía caches, logs y estado dentro del repo. Aquí se convierte ese symlink
+# en un directorio real y se deja versionado únicamente User\settings.json.
+$vscodiumAppData = Join-Path $env:APPDATA "VSCodium"
+$vscodiumRepo = Join-Path $dotfiles "config\.config\VSCodium"
+$vscodiumSettings = Join-Path $vscodiumRepo "User\settings.json"
+
+if ((Test-Path $vscodiumAppData) -and (Get-Item $vscodiumAppData -Force).LinkType -eq "SymbolicLink")
+{
+    $symlinkTarget = [System.IO.Path]::GetFullPath((Get-Item $vscodiumAppData -Force).Target)
+    if ($symlinkTarget -eq [System.IO.Path]::GetFullPath($vscodiumRepo))
+    {
+        if (Get-Process -Name "VSCodium*" -ErrorAction SilentlyContinue)
+        {
+            Write-Warning "VSCodium esta corriendo. Cierralo y vuelve a ejecutar el script para migrar el estado."
+            Read-Host "Presione Enter para salir..."
+            exit 1
+        }
+        Write-Host ">>> Migrando estado de VSCodium fuera del repo..." -ForegroundColor Cyan
+        Remove-Item -LiteralPath $vscodiumAppData -Force
+        New-Item -ItemType Directory -Path $vscodiumAppData -Force | Out-Null
+        Get-ChildItem -LiteralPath $vscodiumRepo -Force | Copy-Item -Destination $vscodiumAppData -Recurse -Force
+        Remove-Item -LiteralPath (Join-Path $vscodiumAppData "User\settings.json") -Force
+        Write-Host "  Estado copiado a $vscodiumAppData" -ForegroundColor DarkYellow
+    }
+}
+
+# Limpieza idempotente: el repo solo debe contener User\settings.json.
+# Quita cualquier cache, log o estado residual que haya quedado dentro del repo.
+if (Test-Path $vscodiumRepo)
+{
+    Get-ChildItem -LiteralPath $vscodiumRepo -Force -ErrorAction SilentlyContinue | Where-Object { $_.FullName -ne $vscodiumSettings } | ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Get-ChildItem -LiteralPath (Split-Path $vscodiumSettings -Parent) -Force -ErrorAction SilentlyContinue | Where-Object { $_.FullName -ne $vscodiumSettings } | ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 
 foreach ($item in $symlinks)
 {
